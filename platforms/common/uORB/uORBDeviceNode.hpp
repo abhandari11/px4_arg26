@@ -175,9 +175,9 @@ public:
 	 *
 	 * This is used in the case of multi_pub/sub to check if it's valid to advertise
 	 * and publish to this node or if another node should be tried. */
-	bool is_advertised() const { return _advertised.load(); }
+	bool is_advertised() const { return _advertised.load(px4::memory_order::relaxed); }
 
-	void mark_as_advertised() { _advertised.store(true); }
+	void mark_as_advertised() { _advertised.store(true, px4::memory_order::relaxed); }
 
 	/**
 	 * Print statistics

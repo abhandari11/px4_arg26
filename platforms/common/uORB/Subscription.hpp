@@ -118,7 +118,7 @@ public:
 	bool ChangeInstance(uint8_t instance);
 
 	uint8_t  get_instance() const { return _instance; }
-	unsigned get_last_generation() const { return _last_generation.load(); }
+	unsigned get_last_generation() const { return _last_generation.load(px4::memory_order::relaxed); }
 	orb_id_t get_topic() const { return get_orb_meta(_orb_id); }
 
 	ORB_ID orb_id() const { return _orb_id; }

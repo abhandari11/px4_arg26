@@ -133,7 +133,7 @@ public:
 	void call() override
 	{
 		// schedule immediately if updated (queue depth or subscription interval)
-		uint8_t req = _required_updates.load();
+		uint8_t req = _required_updates.load(px4::memory_order::relaxed);
 
 		if ((req == 0)
 		    || (Manager::updates_available(_subscription.get_node(), _subscription.get_last_generation()) >= req)) {
@@ -151,7 +151,7 @@ public:
 	void set_required_updates(uint8_t required_updates)
 	{
 		// TODO: constrain to queue depth?
-		_required_updates.store(required_updates);
+		_required_updates.store(required_updates, px4::memory_order::relaxed);
 	}
 
 private:

@@ -234,7 +234,7 @@ uORB::DeviceNode::ioctl(cdev::file_t *filp, int cmd, unsigned long arg)
 		return PX4_OK;
 
 	case ORBIOCISADVERTISED:
-		*(unsigned long *)arg = _advertised.load();
+		*(unsigned long *)arg = _advertised.load(px4::memory_order::relaxed);
 
 		return PX4_OK;
 
@@ -312,7 +312,7 @@ int uORB::DeviceNode::unadvertise(orb_advert_t handle)
 	 * of subscribers and publishers. But we also do not have a leak since future
 	 * publishers reuse the same DeviceNode object.
 	 */
-	devnode->_advertised.store(false);
+	devnode->_advertised.store(false, px4::memory_order::relaxed);
 
 	return PX4_OK;
 }
@@ -349,7 +349,7 @@ uORB::DeviceNode::poll_notify_one(px4_pollfd_struct_t *fds, px4_pollevent_t even
 bool
 uORB::DeviceNode::print_statistics(int max_topic_length)
 {
-	if (!_advertised.load()) {
+	if (!_advertised.load(px4::memory_order::relaxed)) {
 		return false;
 	}
 
