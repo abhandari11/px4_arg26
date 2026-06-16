@@ -533,6 +533,10 @@ menu "Zenoh publishers/subscribers"
 		bool "open_drone_id_arm_status"
 		default n
 
+	config ZENOH_PUBSUB_OPEN_DRONE_ID_BASIC_ID
+		bool "open_drone_id_basic_id"
+		default n
+
 	config ZENOH_PUBSUB_OPEN_DRONE_ID_OPERATOR_ID
 		bool "open_drone_id_operator_id"
 		default n
@@ -1163,6 +1167,7 @@ config ZENOH_PUBSUB_ALL_SELECTION
 	select ZENOH_PUBSUB_OFFBOARD_CONTROL_MODE
 	select ZENOH_PUBSUB_ONBOARD_COMPUTER_STATUS
 	select ZENOH_PUBSUB_OPEN_DRONE_ID_ARM_STATUS
+	select ZENOH_PUBSUB_OPEN_DRONE_ID_BASIC_ID
 	select ZENOH_PUBSUB_OPEN_DRONE_ID_OPERATOR_ID
 	select ZENOH_PUBSUB_OPEN_DRONE_ID_SELF_ID
 	select ZENOH_PUBSUB_OPEN_DRONE_ID_SYSTEM
