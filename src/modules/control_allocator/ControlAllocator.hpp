@@ -54,6 +54,12 @@
 #include <ActuatorEffectivenessHelicopter.hpp>
 #include <ActuatorEffectivenessHelicopterCoaxial.hpp>
 
+/*** CUSTOM ***/
+#include <ActuatorEffectivenessTiltingMultirotor.hpp>
+#include <uORB/topics/tilting_servo_sp.h>
+#include <uORB/topics/debug_array.h>
+/*** END-CUSTOM ***/
+
 #include <ControlAllocation.hpp>
 #include <ControlAllocationPseudoInverse.hpp>
 #include <ControlAllocationSequentialDesaturation.hpp>
@@ -158,6 +164,7 @@ private:
 		HELICOPTER_TAIL_ESC = 10,
 		HELICOPTER_TAIL_SERVO = 11,
 		HELICOPTER_COAXIAL = 12,
+		CUSTOM_TILTING_MULTIROTOR = 13,
 	};
 
 	enum class FailureMode {

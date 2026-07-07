@@ -102,3 +102,6 @@ void ActuatorEffectiveness::stopMaskedMotorsWithZeroThrust(uint32_t stoppable_mo
 		}
 	}
 }
+
+// Out-of-line destructor to ensure the vtable and typeinfo are emitted in this translation unit.
+ActuatorEffectiveness::~ActuatorEffectiveness() = default;

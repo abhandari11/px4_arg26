@@ -37,6 +37,8 @@
  * Interface for Actuator Effectiveness
  *
  * @author Julien Lecoeur <julien.lecoeur@gmail.com>
+ * @author Aabhash Bhandari <aabhash.bhandari@uni.lu>
+ * Adapted for v1.15 only for omnidirectional tilting rotors
  */
 
 #pragma once
@@ -71,7 +73,7 @@ class ActuatorEffectiveness
 {
 public:
 	ActuatorEffectiveness() = default;
-	virtual ~ActuatorEffectiveness() = default;
+	virtual ~ActuatorEffectiveness();
 
 	static constexpr int NUM_ACTUATORS = 16;
 	static constexpr int NUM_AXES = 6;
@@ -197,8 +199,21 @@ public:
 	 * @param actuator_sp input & output setpoint
 	 */
 	virtual void updateSetpoint(const matrix::Vector<float, NUM_AXES> &control_sp,
-				    int matrix_index, ActuatorVector &actuator_sp, const matrix::Vector<float, NUM_ACTUATORS> &actuator_min,
-				    const matrix::Vector<float, NUM_ACTUATORS> &actuator_max) {}
+					int matrix_index, ActuatorVector &actuator_sp) {}
+
+	/**
+	 * Extended updateSetpoint that provides actuator limits. Backwards-compatible wrapper calls
+	 * the simpler 3-argument version by default so older Effectiveness implementations still work.
+	 */
+	virtual void updateSetpoint(const matrix::Vector<float, NUM_AXES> &control_sp,
+					int matrix_index, ActuatorVector &actuator_sp,
+					const matrix::Vector<float, NUM_ACTUATORS> &actuator_min,
+					const matrix::Vector<float, NUM_ACTUATORS> &actuator_max)
+	{
+		// Default behavior: call the simpler override if implemented.
+		updateSetpoint(control_sp, matrix_index, actuator_sp);
+	}
+
 
 	/**
 	 * Get a bitmask of motors to be stopped

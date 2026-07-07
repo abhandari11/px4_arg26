@@ -2,7 +2,7 @@
 #
 # @name Gazebo hillstar
 #
-# @type Tiltrotor Multicopter
+# @type Quadrotor
 #
 
 . ${R}etc/init.d/rc.mc_defaults
@@ -14,13 +14,15 @@ PX4_SIM_MODEL=${PX4_SIM_MODEL:=hillstar}
 param set-default SIM_GZ_EN 1
 
 param set-default SENS_EN_GPSSIM 1
-param set-default SENS_EN_BAROSIM 0
+param set-default SENS_EN_BAROSIM 1
 param set-default SENS_EN_MAGSIM 1
 
 param set-default COM_DISARM_PRFLT -1
 
-param set-default CA_AIRFRAME 8
-param set-default CA_METHOD 2
+param set-default CA_AIRFRAME 13	# custom_tilting_multirotors
+param set-default CA_TILTING_TYPE 1	# 0 = H-shaped, 1 = omnidirectional
+param set-default MC_PITCH_ON_TILT 0
+param set-default MC_MAX_FXY 1.0
 
 param set-default CA_ROTOR_COUNT 4
 param set-default CA_SV_TL_COUNT 4
@@ -30,24 +32,28 @@ param set-default CA_SV_TL0_CT 0
 param set-default CA_SV_TL0_MAXA 90
 param set-default CA_SV_TL0_MINA -90
 param set-default CA_SV_TL0_TD 0
+param set-default CA_SV0_SLEW 3
 
 param set-default CA_ROTOR1_TILT 2
 param set-default CA_SV_TL1_CT 0
 param set-default CA_SV_TL1_MAXA 90
 param set-default CA_SV_TL1_MINA -90
 param set-default CA_SV_TL1_TD 0
+param set-default CA_SV1_SLEW 3
 
 param set-default CA_ROTOR2_TILT 3
 param set-default CA_SV_TL2_CT 0
 param set-default CA_SV_TL2_MAXA 90
 param set-default CA_SV_TL2_MINA -90
 param set-default CA_SV_TL2_TD 0
+param set-default CA_SV2_SLEW 3
 
 param set-default CA_ROTOR3_TILT 4
 param set-default CA_SV_TL3_CT 0
 param set-default CA_SV_TL3_MAXA 90
 param set-default CA_SV_TL3_MINA -90
 param set-default CA_SV_TL3_TD 0
+param set-default CA_SV3_SLEW 3
 
 param set-default CA_ROTOR0_PX 0.28
 param set-default CA_ROTOR0_PY 0.28
