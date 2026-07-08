@@ -21,8 +21,7 @@ param set-default COM_DISARM_PRFLT -1
 
 param set-default CA_AIRFRAME 13	# custom_tilting_multirotors
 param set-default CA_TILTING_TYPE 1	# 0 = H-shaped, 1 = omnidirectional
-param set-default MC_PITCH_ON_TILT 0
-param set-default MC_MAX_FXY 1.0
+param set-default CA_METHOD 1		# 0 = Pseudo Inverse, 1 = Sequential Desaturation
 
 param set-default CA_ROTOR_COUNT 4
 param set-default CA_SV_TL_COUNT 4

@@ -181,10 +181,12 @@ ControlAllocator::update_allocation_method(bool force)
 			switch (method) {
 			case AllocationMethod::PSEUDO_INVERSE:
 				_control_allocation[i] = new ControlAllocationPseudoInverse();
+				PX4_INFO("Using Pseudo Inverse allocation method for matrix %d", i);
 				break;
 
 			case AllocationMethod::SEQUENTIAL_DESATURATION:
 				_control_allocation[i] = new ControlAllocationSequentialDesaturation();
+				PX4_INFO("Using Sequential Desaturation allocation method for matrix %d", i);
 				break;
 
 			default:
