@@ -5,6 +5,12 @@
 #####
 publications:
 
+  - topic: /fmu/out/actuator_motors
+    type: px4_msgs::msg::ActuatorMotors
+
+  - topic: /fmu/out/actuator_servos
+    type: px4_msgs::msg::ActuatorServos
+
   - topic: /fmu/out/register_ext_component_reply
     type: px4_msgs::msg::RegisterExtComponentReply
 
