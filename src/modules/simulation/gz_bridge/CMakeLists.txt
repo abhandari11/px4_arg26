@@ -91,6 +91,7 @@ if(gz-transport_FOUND)
 	set(gz_worlds
 		default
 		windy
+		slope_wall
 		baylands
   		lawn
 	)
