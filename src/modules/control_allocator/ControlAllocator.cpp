@@ -73,6 +73,14 @@ ControlAllocator::ControlAllocator() :
 		_param_handles.slew_rate_servos[i] = param_find(buffer);
 	}
 
+	for (int i = 0; i < MAX_NUM_SERVOS; ++i) {
+		char buffer[17];
+		snprintf(buffer, sizeof(buffer), "CA_SV_TL%u_MINA", i);
+		_param_handles.tilt_angle_min[i] = param_find(buffer);
+		snprintf(buffer, sizeof(buffer), "CA_SV_TL%u_MAXA", i);
+		_param_handles.tilt_angle_max[i] = param_find(buffer);
+	}
+
 	parameters_updated();
 }
 
@@ -120,6 +128,22 @@ ControlAllocator::parameters_updated()
 	for (int i = 0; i < MAX_NUM_SERVOS; ++i) {
 		param_get(_param_handles.slew_rate_servos[i], &_params.slew_rate_servos[i]);
 		_has_slew_rate |= _params.slew_rate_servos[i] > FLT_EPSILON;
+	}
+
+	for (int i = 0; i < MAX_NUM_SERVOS; ++i) {
+		float min_deg = 0.f, max_deg = 0.f;
+
+		if (_param_handles.tilt_angle_min[i] != PARAM_INVALID
+		    && param_get(_param_handles.tilt_angle_min[i], &min_deg) == 0
+		    && _param_handles.tilt_angle_max[i] != PARAM_INVALID
+		    && param_get(_param_handles.tilt_angle_max[i], &max_deg) == 0) {
+			_params.tilt_angle_min[i] = math::radians(min_deg);
+			_params.tilt_angle_max[i] = math::radians(max_deg);
+
+		} else {
+			_params.tilt_angle_min[i] = 0.f;
+			_params.tilt_angle_max[i] = 0.f;
+		}
 	}
 
 	// Allocation method & effectiveness source
@@ -493,19 +517,81 @@ ControlAllocator::Run()
 			}
 
 			//Tilts
+			// Two distinct failure modes of atan2f(lateral, vertical), both
+			// observed during tilt testing at 35 deg+:
+			//
+			// 1. Near the origin (vertical & lateral both small), the angle is
+			//    dominated by noise, not real control demand -- checking the
+			//    combined magnitude and holding the last commanded tilt below
+			//    that threshold avoids trusting it (physically, negligible
+			//    demanded thrust means the exact angle doesn't matter).
+			//
+			// 2. Away from the origin, atan2f's principal range still wraps at
+			//    +/-pi: a target that's legitimately sweeping *through* that
+			//    boundary looks like an instant ~2pi jump if compared to the
+			//    previous angle naively (e.g. -0.94 rad -> -3.14 rad in one
+			//    tick). unwrap_pi() finds the continuous-frame equivalent
+			//    closest to the previous commanded angle first, so a real
+			//    gradual sweep isn't misread as a discontinuity -- then the
+			//    result is explicitly rate-limited (independent of, and ahead
+			//    of, ControlAllocation's own linear slew limiter below, which
+			//    doesn't understand wraparound) so a genuinely large change
+			//    still gets ramped instead of applied in one tick.
+			static constexpr float kMinTiltMagnitude = 0.1f;
+
+			// Absolute sanity ceiling for a commanded tilt angle, independent of the
+			// configured CA_SV_TLx_MINA/MAXA bounds applied by clipActuatorSetpoint()
+			// below. This exists because both math::constrain() and
+			// ControlAllocation::clipActuatorSetpoint() compare against min/max with
+			// '<'/'>', which are false for a NaN operand -- a NaN (or any other
+			// non-finite value) silently passes through those checks unclamped. If a
+			// non-finite/absurd value were ever written into _prev_tilt_sp, unwrap_pi()
+			// ("last + bounded delta") would keep it alive and re-propagate it every
+			// future tick, since it only ever moves relative to the last commanded
+			// angle. This guard is the last line of defense against that: it never
+			// lets an unbounded value reach _prev_tilt_sp/servo_sp in the first place.
+			static constexpr float kAbsoluteTiltCeiling = M_PI_F;
+
 			for(int i=0; i<_num_actuators[1]; i++){
 
-				if( vertical_actuator_sp(i) < 0.1f){
-					servo_sp(i) = 0.00f;
-					// PX4_INFO("tilt_true %d : %f ", i, (double)servo_sp(i));
+				if (!PX4_ISFINITE(_prev_tilt_sp(i))) {
+					_prev_tilt_sp(i) = 0.f;
 				}
-				else{
-					servo_sp(i) = atan2f(lateral_actuator_sp(i),vertical_actuator_sp(i));
-					// PX4_INFO("tilt %d : %f ", i, (double)servo_sp(i));
-				}
-				// PX4_INFO("Lat: %f", (double)lateral_actuator_sp(i));
-				// PX4_INFO("Vert: %f", (double)vertical_actuator_sp(i));
 
+				const float magnitude = sqrtf(vertical_actuator_sp(i) * vertical_actuator_sp(i) +
+							       lateral_actuator_sp(i) * lateral_actuator_sp(i));
+
+				float target = _prev_tilt_sp(i);
+				bool anomaly = false;
+
+				if (magnitude >= kMinTiltMagnitude) {
+					const float raw = atan2f(lateral_actuator_sp(i), vertical_actuator_sp(i));
+					target = matrix::unwrap_pi(_prev_tilt_sp(i), raw);
+
+					if (!PX4_ISFINITE(target)) {
+						anomaly = true;
+						target = _prev_tilt_sp(i);
+					}
+				}
+
+				const float range = _params.tilt_angle_max[i] - _params.tilt_angle_min[i];
+				const float max_step = (_params.slew_rate_servos[i] > FLT_EPSILON)
+							? dt * range / _params.slew_rate_servos[i]
+							: range;
+
+				servo_sp(i) = math::constrain(target, _prev_tilt_sp(i) - max_step, _prev_tilt_sp(i) + max_step);
+
+				if (!PX4_ISFINITE(servo_sp(i)) || fabsf(servo_sp(i)) > kAbsoluteTiltCeiling) {
+					anomaly = true;
+					servo_sp(i) = math::constrain(_prev_tilt_sp(i), -kAbsoluteTiltCeiling, kAbsoluteTiltCeiling);
+				}
+
+				if (anomaly && hrt_elapsed_time(&_last_tilt_anomaly_warn) > 1_s) {
+					_last_tilt_anomaly_warn = hrt_absolute_time();
+					PX4_WARN("tilt[%d] anomaly: vert=%.4f lat=%.4f mag=%.4f prev=%.4f -> held %.4f",
+						 i, (double)vertical_actuator_sp(i), (double)lateral_actuator_sp(i),
+						 (double)magnitude, (double)_prev_tilt_sp(i), (double)servo_sp(i));
+				}
 			}
 
 			matrix::Vector<float, NUM_ACTUATORS> actuatorMax, actuatorMin;
@@ -523,9 +609,30 @@ ControlAllocator::Run()
 			_control_allocation[0]->setActuatorMax(actuatorMax);
 			_control_allocation[0]->setActuatorMin(actuatorMin);
 
-			// TODO: check the limits for tilts
-			// _control_allocation[1]->setActuatorMax(actuatorMax);
-			// _control_allocation[1]->setActuatorMin(actuatorMin);
+			// _control_allocation[1] holds servo_sp directly in radians (see
+			// atan2f() above), not the normalized [-1,1] range actuatorMax/Min
+			// use -- reusing that vector here previously left this matrix at
+			// the ControlAllocation base-class default bounds [0, 1] rad
+			// (clipActuatorSetpoint() inside setActuatorSetpoint() below),
+			// silently overriding CA_SV_TL{i}_MINA/MAXA with a one-directional
+			// ~57 deg cap regardless of what the airframe config specifies.
+			matrix::Vector<float, NUM_ACTUATORS> servoSlew;
+
+			for (int i = 0; i < _num_actuators[1]; i++) {
+				servoMin(i) = _params.tilt_angle_min[i];
+				servoMax(i) = _params.tilt_angle_max[i];
+				servoSlew(i) = _params.slew_rate_servos[i];
+			}
+			_control_allocation[1]->setActuatorMax(servoMax);
+			_control_allocation[1]->setActuatorMin(servoMin);
+			// applySlewRateLimit() below only constrains movement within
+			// [_actuator_min, _actuator_max] over _actuator_slew_rate_limit
+			// seconds -- setting this explicitly here (rather than relying
+			// on whatever the one-time effectiveness-matrix setup wired up)
+			// guarantees it lines up with _control_allocation[1]'s own
+			// 0.._num_actuators[1]-1 tilt-only indexing used throughout this
+			// branch, not the combined motor+servo indexing setup() assumes.
+			_control_allocation[1]->setSlewRateLimit(servoSlew);
 
 			_control_allocation[0]->setActuatorSetpoint(actuator_sp);
 			_control_allocation[1]->setActuatorSetpoint(servo_sp);
@@ -548,6 +655,10 @@ ControlAllocator::Run()
 			//Here the _actuator_sp is clipped and saved to be published
 			_control_allocation[0]->clipActuatorSetpoint();
 			_control_allocation[1]->clipActuatorSetpoint();
+
+			// Capture the final (post slew-limit, post-clip) tilt command for
+			// next tick's small-magnitude hold, above.
+			_prev_tilt_sp = _control_allocation[1]->getActuatorSetpoint();
 
 		}
 		/*** END-CUSTOM ***/

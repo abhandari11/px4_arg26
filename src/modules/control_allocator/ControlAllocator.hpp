@@ -121,11 +121,15 @@ private:
 	struct ParamHandles {
 		param_t slew_rate_motors[MAX_NUM_MOTORS];
 		param_t slew_rate_servos[MAX_NUM_SERVOS];
+		param_t tilt_angle_min[MAX_NUM_SERVOS];
+		param_t tilt_angle_max[MAX_NUM_SERVOS];
 	};
 
 	struct Params {
 		float slew_rate_motors[MAX_NUM_MOTORS];
 		float slew_rate_servos[MAX_NUM_SERVOS];
+		float tilt_angle_min[MAX_NUM_SERVOS]; ///< radians, from CA_SV_TL{i}_MINA (deg)
+		float tilt_angle_max[MAX_NUM_SERVOS]; ///< radians, from CA_SV_TL{i}_MAXA (deg)
 	};
 
 	/**
@@ -216,6 +220,20 @@ private:
 	ParamHandles _param_handles{};
 	Params _params{};
 	bool _has_slew_rate{false};
+
+	/// Last commanded tilt-servo setpoint (radians), captured *after* slew/clip
+	/// so it reflects what was actually applied. Used to hold the current tilt
+	/// steady when the (vertical, lateral) thrust demand for a rotor is too
+	/// small for atan2f's angle to be meaningful -- see the CUSTOM_TILTING_MULTIROTOR
+	/// branch in update(). _control_allocation[1] can't be read for this directly:
+	/// it's reused each tick first for a lateral-force allocate() solve, then
+	/// overwritten with the actual tilt command, so its internal setpoint isn't
+	/// "last tick's tilt angle" at the point this guard runs.
+	matrix::Vector<float, NUM_ACTUATORS> _prev_tilt_sp{};
+
+	/// Rate-limits the diagnostic warning logged when a tilt-servo setpoint fails the
+	/// finite/sanity guard below, so a runaway condition doesn't spam the log.
+	hrt_abstime _last_tilt_anomaly_warn{0};
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::CA_AIRFRAME>) _param_ca_airframe,
