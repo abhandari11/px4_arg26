@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# @name Gazebo hillstar gripper
+#
+# @type Quadrotor
+#
+
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=hillstar_gripper}
+
+. ${R}etc/init.d-posix/airframes/4022_gz_hillstar

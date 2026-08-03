@@ -84,6 +84,8 @@ px4_add_romfs_files(
 	4010_gz_x500_mono_cam
 	4011_gz_lawnmower
 	4022_gz_hillstar
+	4023_gz_hillstar_rigid_arm
+	4024_gz_hillstar_gripper
 
 	6011_gazebo-classic_typhoon_h480
 	6011_gazebo-classic_typhoon_h480.post
