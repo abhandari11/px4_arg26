@@ -501,8 +501,20 @@ ControlAllocator::Run()
 			_control_allocation[0]->allocate();
 			vertical_actuator_sp = _control_allocation[0]->getActuatorSetpoint();
 
+			// Sequential residual allocation: matrix 1 (lateral/tilt) only allocates what
+			// matrix 0 (vertical) could not achieve -- otherwise both matrices independently
+			// solve for the full torque demand (both have nonzero Mx/My/Mz columns), and the
+			// per-rotor sqrt/atan2 recombination below sums their contributions, roughly
+			// double-counting torque. Since that recombination is an exact identity
+			// (T*cos/sin reconstruct vertical_actuator_sp/lateral_actuator_sp regardless of
+			// how they were computed), netting out what matrix 0 already achieved before
+			// solving matrix 1 removes the double-count while still deferring genuinely
+			// unreachable demand (e.g. Fx/Fy, which matrix 0 structurally cannot produce, or
+			// leftover torque if matrix 0 saturates) to matrix 1.
+			const matrix::Vector<float, NUM_AXES> residual_sp = c[0] - _control_allocation[0]->getAllocatedControl();
+
 			//Lateral forces
-			_control_allocation[1]->setControlSetpoint(c[0]);
+			_control_allocation[1]->setControlSetpoint(residual_sp);
 			_control_allocation[1]->allocate();
 			lateral_actuator_sp = _control_allocation[1]->getActuatorSetpoint();//_control_allocation[1]->getActuatorSetpoint();
 			// PX4_INFO("v_sp %d : %f ", 0, (double)lateral_actuator_sp(0));
