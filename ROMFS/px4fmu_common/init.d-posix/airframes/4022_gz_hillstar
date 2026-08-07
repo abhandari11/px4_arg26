@@ -92,3 +92,23 @@ param set-default SIM_GZ_SV_FUNC4 204
 
 param set-default MPC_THR_HOVER 0.40
 
+# Custom Control gains
+# Obtained from Auto-tuning QGC
+# param set-default MC_YAW_P 5.86
+param set-default MC_PITCHRATE_D 0.0014
+param set-default MC_PITCHRATE_I 0.175
+param set-default MC_PITCHRATE_P 0.069
+
+param set-default MC_ROLLRATE_D 0.0013
+param set-default MC_ROLLRATE_I 0.160
+param set-default MC_ROLLRATE_P 0.118
+
+param set-default MC_YAWRATE_D 0.0
+param set-default MC_YAWRATE_I 0.14
+param set-default MC_YAWRATE_P 0.16
+
+# EKF2: Vision position and heading, no GPS
+param set-default EKF2_EV_DELAY 5
+param set-default EKF2_EV_CTRL 15
+param set-default EKF2_HGT_REF 3
+param set-default EKF2_GPS_CTRL 0

@@ -8,3 +8,19 @@
 PX4_SIM_MODEL=${PX4_SIM_MODEL:=hillstar_gripper}
 
 . ${R}etc/init.d-posix/airframes/4022_gz_hillstar
+
+# Custom Control gains
+# Obtained from Auto-tuning QGC
+# param set-default MC_YAW_P 5.86
+param set-default MC_PITCHRATE_D 0.001
+param set-default MC_PITCHRATE_I 0.070
+param set-default MC_PITCHRATE_P 0.050
+
+param set-default MC_ROLLRATE_D 0.0014
+param set-default MC_ROLLRATE_I 0.071
+param set-default MC_ROLLRATE_P 0.054
+
+param set-default MC_YAWRATE_D 0.0
+param set-default MC_YAWRATE_I 0.16
+param set-default MC_YAWRATE_P 0.16
+
