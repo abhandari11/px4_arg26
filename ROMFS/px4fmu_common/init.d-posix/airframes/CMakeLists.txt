@@ -86,6 +86,8 @@ px4_add_romfs_files(
 	4022_gz_hillstar
 	4023_gz_hillstar_rigid_arm
 	4024_gz_hillstar_gripper
+	4025_gz_hillstar_rigid_arm_gripper
+	4026_gz_hillstar_continuum_arm_gripper
 
 	6011_gazebo-classic_typhoon_h480
 	6011_gazebo-classic_typhoon_h480.post

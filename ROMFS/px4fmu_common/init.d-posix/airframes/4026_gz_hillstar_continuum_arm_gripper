@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# @name Gazebo hillstar with soft continuum arm and tip-mounted gripper
+#
+# @type Quadrotor
+#
+
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=hillstar_continuum_arm_gripper}
+
+. ${R}etc/init.d-posix/airframes/4024_gz_hillstar_gripper
