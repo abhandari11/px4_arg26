@@ -94,6 +94,7 @@ if(gz-transport_FOUND)
 		slope_wall
 		baylands
   		lawn
+		continuum_arm_grasping
 	)
 
 	# find corresponding airframes
